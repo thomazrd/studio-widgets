@@ -1,0 +1,13 @@
+{
+  "name": "guided-breathing-widget",
+  "version": "1.0.0",
+  "description": "Guided Breathing Widget",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
