@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro App Preview</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #f0f0f5; /* Light background to see widget clearly */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #widget-container {
+      width: 400px;
+      height: 600px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="widget-container">
+    <pomodoro-app></pomodoro-app>
+  </div>
+  <script type="module" src="/src/index.js"></script>
+</body>
+</html>
