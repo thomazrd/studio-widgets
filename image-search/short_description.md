@@ -1,0 +1,1 @@
+Uma ferramenta elegante para buscar, filtrar e visualizar imagens em alta qualidade.
