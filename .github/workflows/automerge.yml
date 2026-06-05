@@ -23,7 +23,7 @@ jobs:
       - name: Fazer o Merge do PR
         env:
           # O GitHub cria essa senha automaticamente para o robô funcionar
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MEU_PAT_ESPECIAL }}
           URL_DO_PR: ${{ github.event.pull_request.html_url }}
         
         # 4. A ordem para abrir a porta!
