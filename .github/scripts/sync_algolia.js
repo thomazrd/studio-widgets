@@ -86,10 +86,17 @@ async function syncWidget() {
   const titlePath = path.join(WIDGET_DIR, 'title.md');
   const shortDescPath = path.join(WIDGET_DIR, 'short_description.md');
   const longDescPath = path.join(WIDGET_DIR, 'long_description.md');
+  const widgetIdPath = path.join(WIDGET_DIR, 'widget-id.md');
 
   let title = readFileSafely(titlePath);
   let shortDesc = readFileSafely(shortDescPath);
   let longDesc = readFileSafely(longDescPath);
+
+  // Use widget-id.md as the unique key, fallback to WIDGET_DIR
+  let widgetId = readFileSafely(widgetIdPath);
+  if (!widgetId) {
+    widgetId = WIDGET_DIR;
+  }
 
   if (!title || !shortDesc || !longDesc) {
     const fallback = getFallbackData(WIDGET_DIR);
@@ -101,8 +108,8 @@ async function syncWidget() {
   const jsdelivrBase = `https://cdn.jsdelivr.net/gh/thomazrd/studio-widgets@main/${WIDGET_DIR}`;
 
   const payload = {
-    objectID: WIDGET_DIR,
-    id: WIDGET_DIR,
+    objectID: widgetId,
+    id: widgetId,
     title: title,
     short_description: shortDesc,
     long_description: longDesc,
@@ -119,7 +126,7 @@ async function syncWidget() {
 
   const indexName = 'widgets';
   // Use non-DSN endpoint for writes
-  const url = `https://${appId}.algolia.net/1/indexes/${indexName}/${WIDGET_DIR}`;
+  const url = `https://${appId}.algolia.net/1/indexes/${indexName}/${widgetId}`;
 
   try {
     const response = await fetch(url, {

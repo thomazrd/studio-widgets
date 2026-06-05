@@ -32,8 +32,8 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
           echo "Finding changed files between commits..."
-          # Get list of changed files
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          # Get list of changed files using before and after shas
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
 
           # Extract root folder names (widgets)
           WIDGETS_TO_SYNC=""
@@ -60,8 +60,9 @@ jobs:
         env:
           APP_ID: ${{ secrets.APP_ID }}
           API_KEY: ${{ secrets.API_KEY }}
+          INPUT_WIDGET: ${{ github.event.inputs.widget }}
         run: |
-          WIDGET="${{ github.event.inputs.widget }}"
+          WIDGET="$INPUT_WIDGET"
           echo "Manually syncing widget: $WIDGET"
           if [ -d "$WIDGET" ]; then
             node .github/scripts/sync_algolia.js "$WIDGET"
