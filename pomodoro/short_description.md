@@ -1,0 +1,1 @@
+Um elegante e moderno timer Pomodoro para gerenciar o seu tempo e aumentar a sua produtividade.
