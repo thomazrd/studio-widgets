@@ -1,0 +1,1 @@
+Calculadora multi-tema construída com Web Components, oferecendo visualizações diversificadas e histórico salvo de forma local e segura.
