@@ -1,0 +1,72 @@
+name: Algolia Widget Sync
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      widget:
+        description: 'Folder name of the widget to sync manually (e.g., teclado-sintetizador)'
+        required: true
+        type: string
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Identify and sync widgets (Push)
+        if: github.event_name == 'push'
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "Finding changed files between commits..."
+          # Get list of changed files using before and after shas
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+
+          # Extract root folder names (widgets)
+          WIDGETS_TO_SYNC=""
+          for file in $CHANGED_FILES; do
+            WIDGET=$(echo "$file" | cut -d/ -f1)
+            # Make sure it's a directory and not a hidden folder/file like .github
+            if [ -d "$WIDGET" ] && [[ ! "$WIDGET" == .* ]]; then
+              # Deduplicate
+              if [[ ! " $WIDGETS_TO_SYNC " =~ " $WIDGET " ]]; then
+                WIDGETS_TO_SYNC="$WIDGETS_TO_SYNC $WIDGET"
+              fi
+            fi
+          done
+
+          echo "Widgets to sync: $WIDGETS_TO_SYNC"
+
+          for widget in $WIDGETS_TO_SYNC; do
+            echo "Syncing $widget..."
+            node .github/scripts/sync_algolia.js "$widget"
+          done
+
+      - name: Sync widget (Manual Dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          API_KEY: ${{ secrets.API_KEY }}
+          INPUT_WIDGET: ${{ github.event.inputs.widget }}
+        run: |
+          WIDGET="$INPUT_WIDGET"
+          echo "Manually syncing widget: $WIDGET"
+          if [ -d "$WIDGET" ]; then
+            node .github/scripts/sync_algolia.js "$WIDGET"
+          else
+            echo "Error: Widget folder '$WIDGET' does not exist."
+            exit 1
+          fi
