@@ -1,0 +1,73 @@
+name: Sync Widgets to Algolia
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      widget_folder:
+        description: 'Folder name of the widget to sync (e.g., teclado-sintetizador)'
+        required: true
+
+jobs:
+  sync_to_algolia:
+    # Run if it's a manual trigger OR if the PR was merged (not just closed)
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Get changed files (if PR merged)
+        id: changed-files
+        if: github.event_name == 'pull_request'
+        run: |
+          # Get list of changed files from PR base to head
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          # Extract widget folder names (top level directories)
+          WIDGET_FOLDERS=""
+          for FILE in $CHANGED_FILES; do
+            # Skip hidden files/folders and scripts
+            if [[ $FILE != .* ]] && [[ $FILE != scripts/* ]]; then
+              FOLDER=$(echo "$FILE" | cut -d/ -f1)
+              # Check if it's a directory
+              if [ -d "$FOLDER" ] && [[ ! " $WIDGET_FOLDERS " =~ " $FOLDER " ]]; then
+                WIDGET_FOLDERS="$WIDGET_FOLDERS $FOLDER"
+              fi
+            fi
+          done
+          echo "folders=$WIDGET_FOLDERS" >> $GITHUB_OUTPUT
+
+      - name: Sync Widgets (PR Merged)
+        if: github.event_name == 'pull_request'
+        env:
+          ALGOLIA_APP_ID: ${{ secrets.APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          FOLDERS="${{ steps.changed-files.outputs.folders }}"
+          if [ -z "$FOLDERS" ]; then
+            echo "No widget directories changed in this PR. Skipping sync."
+          else
+            for FOLDER in $FOLDERS; do
+              echo "Syncing $FOLDER..."
+              node scripts/sync_algolia.js "$FOLDER"
+            done
+          fi
+
+      - name: Sync Widget (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          ALGOLIA_APP_ID: ${{ secrets.APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "Syncing ${{ github.event.inputs.widget_folder }}..."
+          node scripts/sync_algolia.js "${{ github.event.inputs.widget_folder }}"
