@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vocal Tuner Widget Test</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Simulate a container embedding the widget */
+    .widget-host {
+      width: 800px;
+      height: 600px;
+      border: 2px dashed #666;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget-host">
+    <vocal-tuner></vocal-tuner>
+  </div>
+  <script type="module" src="/src/index.js"></script>
+</body>
+</html>
