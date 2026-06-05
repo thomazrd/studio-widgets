@@ -1,0 +1,30 @@
+name: Auto Merge PRs
+
+# 1. Quando o robô deve acordar?
+# Ele acorda toda vez que um PR é aberto ou atualizado.
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+# 2. O que o robô vai fazer?
+jobs:
+  merge-automatico:
+    runs-on: ubuntu-latest
+    
+    # 3. Dando a chave da porta para o robô
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - name: Fazer o Merge do PR
+        env:
+          # O GitHub cria essa senha automaticamente para o robô funcionar
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL_DO_PR: ${{ github.event.pull_request.html_url }}
+        
+        # 4. A ordem para abrir a porta!
+        run: gh pr merge $URL_DO_PR --merge --admin
