@@ -1,0 +1,1 @@
+A comprehensive and professional checklist management application built with React. Features include project categorization, task management with priorities, due dates, progress tracking, and a highly responsive, native-like user interface. Data is persisted securely in local storage.
