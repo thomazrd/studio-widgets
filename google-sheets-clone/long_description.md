@@ -1,0 +1,1 @@
+A fully professional and functional spreadsheet widget clone of Google Sheets, featuring a data grid, formula bar, cell formatting, and persistent local storage. Built using Web Components and modern UI/UX principles.
