@@ -1,0 +1,1 @@
+Crie, edite e organize ideias com este mapa mental interativo.
