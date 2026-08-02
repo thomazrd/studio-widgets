@@ -396,6 +396,7 @@ template.innerHTML = `
     height: 100%;
     outline: none;
     cursor: text;
+    overflow-y: auto;
   }
 
 </style>

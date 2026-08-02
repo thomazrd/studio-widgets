@@ -45,6 +45,7 @@ class MiroClone extends HTMLElement {
     this.panX = 0;
     this.panY = 0;
     this.isPanning = false;
+    this.isSpaceDown = false;
     this.startX = 0;
     this.startY = 0;
 
@@ -92,9 +93,30 @@ class MiroClone extends HTMLElement {
     return id;
   }
 
+  handleGlobalKeyDown = (e) => {
+    if (e.code === 'Space' && !this.isSpaceDown && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && !e.target.isContentEditable) {
+      this.isSpaceDown = true;
+      if (this.currentTool === 'select') {
+        this.workspaceEl.style.cursor = 'grab';
+      }
+    }
+    this.clipboardManager.handleGlobalKeyDown(e);
+  };
+
+  handleGlobalKeyUp = (e) => {
+    if (e.code === 'Space') {
+      this.isSpaceDown = false;
+      this.workspaceManager.updateWorkspaceCursor();
+    }
+  };
+
   connectedCallback() {
     this.bindEvents();
     this.dashboardManager.renderDashboard();
+  }
+
+  disconnectedCallback() {
+    this.unbindEvents();
   }
 
   bindEvents() {
@@ -127,9 +149,17 @@ class MiroClone extends HTMLElement {
       });
     });
 
-    document.addEventListener('keydown', (e) => this.clipboardManager.handleGlobalKeyDown(e));
+    document.addEventListener('keydown', this.handleGlobalKeyDown);
+    document.addEventListener('keyup', this.handleGlobalKeyUp);
     this.workspaceManager.bindEvents();
     this.bindWorkspacePointerEvents();
+  }
+
+  unbindEvents() {
+    document.removeEventListener('keydown', this.handleGlobalKeyDown);
+    document.removeEventListener('keyup', this.handleGlobalKeyUp);
+    if (this.handlePointerMove) window.removeEventListener('pointermove', this.handlePointerMove);
+    if (this.handlePointerUp) window.removeEventListener('pointerup', this.handlePointerUp);
   }
 
   bindWorkspacePointerEvents() {
@@ -173,7 +203,7 @@ class MiroClone extends HTMLElement {
     this.workspaceEl.addEventListener('pointerdown', (e) => {
       const isDirectClick = e.target === this.workspaceEl || e.target === this.workspaceContentEl || e.target === this.drawingLayer;
 
-      if (e.button === 1 || e.button === 2) {
+      if (e.button === 1 || e.button === 2 || (e.button === 0 && this.isSpaceDown)) {
         this.isPanning = true;
         this.startX = e.clientX - this.panX;
         this.startY = e.clientY - this.panY;
@@ -212,7 +242,7 @@ class MiroClone extends HTMLElement {
     });
 
     // Pointer Move
-    window.addEventListener('pointermove', (e) => {
+    this.handlePointerMove = (e) => {
       if (this.isPanning) {
         this.panX = e.clientX - this.startX;
         this.panY = e.clientY - this.startY;
@@ -271,10 +301,11 @@ class MiroClone extends HTMLElement {
         el.style.width = newWidth + 'px';
         el.style.height = newHeight + 'px';
       }
-    });
+    };
+    window.addEventListener('pointermove', this.handlePointerMove);
 
     // Pointer Up
-    window.addEventListener('pointerup', (e) => {
+    this.handlePointerUp = (e) => {
       if (this.isPanning) {
         this.isPanning = false;
         this.workspaceManager.updateWorkspaceCursor();
@@ -317,7 +348,8 @@ class MiroClone extends HTMLElement {
         this.isResizingElement = false;
         this.saveBoardState();
       }
-    });
+    };
+    window.addEventListener('pointerup', this.handlePointerUp);
   }
 
   // --- Persistence ---
