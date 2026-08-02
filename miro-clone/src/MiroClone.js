@@ -183,16 +183,24 @@ class MiroClone extends HTMLElement {
         const coords = this.workspaceManager.getWorkspaceCoords(e.clientX, e.clientY);
 
         if (this.currentTool === 'select' && isDirectClick) {
-          this.isDrawingSelection = true;
-          this.selectionBoxStartX = coords.x;
-          this.selectionBoxStartY = coords.y;
-          if (!e.shiftKey) {
-             this.selectionManager.clearSelection();
+          if (this.selectedElements.length > 0) {
+              this.isDraggingElement = true;
+              this.didDragElement = false;
+              this.draggedFromWorkspace = true;
+              this.elementDragStartX = coords.x;
+              this.elementDragStartY = coords.y;
+          } else {
+              this.isDrawingSelection = true;
+              this.selectionBoxStartX = coords.x;
+              this.selectionBoxStartY = coords.y;
+              if (!e.shiftKey) {
+                 this.selectionManager.clearSelection();
+              }
+              this.selectionBoxEl = document.createElement('div');
+              this.selectionBoxEl.className = 'selection-box';
+              this.workspaceContentEl.appendChild(this.selectionBoxEl);
+              this.selectionManager.updateSelectionBox(coords.x, coords.y);
           }
-          this.selectionBoxEl = document.createElement('div');
-          this.selectionBoxEl.className = 'selection-box';
-          this.workspaceContentEl.appendChild(this.selectionBoxEl);
-          this.selectionManager.updateSelectionBox(coords.x, coords.y);
         } else if (this.currentTool === 'pen' || this.currentTool === 'line') {
           this.isDrawing = true;
           this.drawingManager.startDrawing(coords);
@@ -219,6 +227,10 @@ class MiroClone extends HTMLElement {
         const coords = this.workspaceManager.getWorkspaceCoords(e.clientX, e.clientY);
         const dx = coords.x - this.elementDragStartX;
         const dy = coords.y - this.elementDragStartY;
+
+        if (Math.abs(dx) > 0 || Math.abs(dy) > 0) {
+            this.didDragElement = true;
+        }
 
         this.selectedElements.forEach(el => {
             if (el.tagName.toLowerCase() === 'line' || el.tagName.toLowerCase() === 'path') {
@@ -262,7 +274,7 @@ class MiroClone extends HTMLElement {
     });
 
     // Pointer Up
-    window.addEventListener('pointerup', () => {
+    window.addEventListener('pointerup', (e) => {
       if (this.isPanning) {
         this.isPanning = false;
         this.workspaceManager.updateWorkspaceCursor();
@@ -293,7 +305,13 @@ class MiroClone extends HTMLElement {
       }
       if (this.isDraggingElement) {
         this.isDraggingElement = false;
-        this.saveBoardState();
+        if (this.draggedFromWorkspace && !this.didDragElement && !e.shiftKey) {
+            this.selectionManager.clearSelection();
+        } else if (this.didDragElement) {
+            this.saveBoardState();
+        }
+        this.didDragElement = false;
+        this.draggedFromWorkspace = false;
       }
       if (this.isResizingElement) {
         this.isResizingElement = false;
