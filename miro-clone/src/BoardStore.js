@@ -27,7 +27,8 @@ class BoardStore {
       id: this.generateId(),
       title: title || 'Novo Quadro',
       updatedAt: new Date().toISOString(),
-      elements: []
+      elements: [],
+      drawings: []
     };
     boards.push(newBoard);
     this.saveBoards(boards);

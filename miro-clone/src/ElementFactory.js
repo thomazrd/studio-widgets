@@ -55,8 +55,10 @@ export class ElementFactory {
       el.style.height = (existingData && existingData.height) ? existingData.height + 'px' : '';
       el.appendChild(content);
 
-      content.addEventListener('input', () => this.app.saveBoardState());
-      content.addEventListener('pointerdown', (e) => e.stopPropagation());
+      content.addEventListener('blur', () => this.app.saveBoardState());
+      content.addEventListener('pointerdown', (e) => {
+        if (this.app.currentTool !== 'select') e.stopPropagation();
+      });
       content.addEventListener('keydown', (e) => e.stopPropagation());
     } else if (type === 'text') {
       el.classList.add('text-note');
@@ -66,8 +68,10 @@ export class ElementFactory {
       content.innerHTML = existingData ? existingData.content : 'Texto';
       el.appendChild(content);
 
-      content.addEventListener('input', () => this.app.saveBoardState());
-      content.addEventListener('pointerdown', (e) => e.stopPropagation());
+      content.addEventListener('blur', () => this.app.saveBoardState());
+      content.addEventListener('pointerdown', (e) => {
+        if (this.app.currentTool !== 'select') e.stopPropagation();
+      });
       content.addEventListener('keydown', (e) => e.stopPropagation());
     }
 
@@ -85,18 +89,11 @@ export class ElementFactory {
           const w = rect.width;
           const h = rect.height;
 
+          let isInsideCenter = false;
+
           if (type === 'rect') {
               if (x > borderWidth && x < w - borderWidth && y > borderWidth && y < h - borderWidth) {
-                  el.style.pointerEvents = 'none';
-                  const target = this.app.shadowRoot.elementFromPoint(e.clientX, e.clientY);
-                  el.style.pointerEvents = '';
-                  e.stopPropagation();
-                  if (target && target !== el) {
-                      target.dispatchEvent(new PointerEvent(e.type, e));
-                      target.dispatchEvent(new MouseEvent('mousedown', e));
-                      if (target.isContentEditable) target.focus();
-                  }
-                  return;
+                  isInsideCenter = true;
               }
           } else if (type === 'circle') {
               const cx = w / 2;
@@ -106,15 +103,27 @@ export class ElementFactory {
               const dy = y - cy;
               const dist = Math.sqrt(dx*dx + dy*dy);
               if (dist < r - borderWidth) {
-                  el.style.pointerEvents = 'none';
-                  const target = this.app.shadowRoot.elementFromPoint(e.clientX, e.clientY);
-                  el.style.pointerEvents = '';
+                  isInsideCenter = true;
+              }
+          }
+
+          if (isInsideCenter) {
+              el.style.pointerEvents = 'none';
+              const target = this.app.shadowRoot.elementFromPoint(e.clientX, e.clientY);
+              el.style.pointerEvents = '';
+              
+              const isWorkspace = !target || 
+                                  target === this.app.workspaceEl || 
+                                  target === this.app.workspaceContentEl || 
+                                  target === this.app.drawingLayer || 
+                                  target.tagName.toLowerCase() === 'svg' || 
+                                  target.classList.contains('board-workspace');
+
+              if (!isWorkspace && target !== el) {
                   e.stopPropagation();
-                  if (target && target !== el) {
-                      target.dispatchEvent(new PointerEvent(e.type, e));
-                      target.dispatchEvent(new MouseEvent('mousedown', e));
-                      if (target.isContentEditable) target.focus();
-                  }
+                  target.dispatchEvent(new PointerEvent(e.type, e));
+                  target.dispatchEvent(new MouseEvent('mousedown', e));
+                  if (target.isContentEditable) target.focus();
                   return;
               }
           }
