@@ -52,6 +52,10 @@ jobs:
 
           for widget in $WIDGETS_TO_SYNC; do
             echo "Syncing $widget..."
+            if [ -f "$widget/package.json" ]; then
+              echo "Building $widget..."
+              (cd "$widget" && npm install && npm run build || echo "No build script or build failed")
+            fi
             node .github/scripts/sync_algolia.js "$widget"
           done
 
@@ -65,6 +69,10 @@ jobs:
           WIDGET="$INPUT_WIDGET"
           echo "Manually syncing widget: $WIDGET"
           if [ -d "$WIDGET" ]; then
+            if [ -f "$WIDGET/package.json" ]; then
+              echo "Building $WIDGET..."
+              (cd "$WIDGET" && npm install && npm run build || echo "No build script or build failed")
+            fi
             node .github/scripts/sync_algolia.js "$WIDGET"
           else
             echo "Error: Widget folder '$WIDGET' does not exist."
