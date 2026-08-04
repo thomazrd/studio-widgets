@@ -28,6 +28,7 @@ class MiroClone extends HTMLElement {
     this.penOptionsEl = this.shadowRoot.getElementById('pen-options');
     this.penColorInput = this.shadowRoot.getElementById('pen-color');
     this.penThicknessInput = this.shadowRoot.getElementById('pen-thickness');
+    this.lockBtn = this.shadowRoot.getElementById('lock-btn');
     this.undoBtn = this.shadowRoot.getElementById('undo-btn');
     this.redoBtn = this.shadowRoot.getElementById('redo-btn');
 
@@ -124,6 +125,7 @@ class MiroClone extends HTMLElement {
     this.backBtn.addEventListener('click', () => this.dashboardManager.showDashboard());
     this.undoBtn.addEventListener('click', () => this.undo());
     this.redoBtn.addEventListener('click', () => this.redo());
+    this.lockBtn.addEventListener('click', () => this.toggleLock());
 
     this.boardTitleInput.addEventListener('change', (e) => {
       if (this.currentBoardId) {
@@ -164,6 +166,8 @@ class MiroClone extends HTMLElement {
 
   bindWorkspacePointerEvents() {
     this.drawingLayer.addEventListener('pointerdown', (e) => {
+        const board = this.boardStore.getBoard(this.currentBoardId);
+        if (board && board.isLocked) return;
         if (this.currentTool !== 'select') return;
         const target = e.target;
         if (target.tagName.toLowerCase() === 'line' || target.tagName.toLowerCase() === 'path') {
@@ -202,14 +206,18 @@ class MiroClone extends HTMLElement {
     // Pointer Down
     this.workspaceEl.addEventListener('pointerdown', (e) => {
       const isDirectClick = e.target === this.workspaceEl || e.target === this.workspaceContentEl || e.target === this.drawingLayer;
+      const board = this.boardStore.getBoard(this.currentBoardId);
+      const isLocked = board ? board.isLocked : false;
 
-      if (e.button === 1 || e.button === 2 || (e.button === 0 && this.isSpaceDown)) {
+      if (e.button === 1 || e.button === 2 || (e.button === 0 && (this.isSpaceDown || isLocked))) {
         this.isPanning = true;
         this.startX = e.clientX - this.panX;
         this.startY = e.clientY - this.panY;
         this.workspaceEl.style.cursor = 'grabbing';
-        this.selectionManager.clearSelection();
-      } else if (e.button === 0) {
+        if (!isLocked) {
+           this.selectionManager.clearSelection();
+        }
+      } else if (e.button === 0 && !isLocked) {
         const coords = this.workspaceManager.getWorkspaceCoords(e.clientX, e.clientY);
 
         if (this.currentTool === 'select' && isDirectClick) {
@@ -428,8 +436,10 @@ class MiroClone extends HTMLElement {
   }
 
   undo() {
+      const board = this.boardStore.getBoard(this.currentBoardId);
+      if (board && board.isLocked) return;
       if (this.undoStack.length === 0) return;
-      const currentState = this.boardStore.getBoard(this.currentBoardId);
+      const currentState = board;
       this.redoStack.push({
           elements: JSON.parse(JSON.stringify(currentState.elements || [])),
           drawings: JSON.parse(JSON.stringify(currentState.drawings || []))
@@ -444,8 +454,10 @@ class MiroClone extends HTMLElement {
   }
 
   redo() {
+      const board = this.boardStore.getBoard(this.currentBoardId);
+      if (board && board.isLocked) return;
       if (this.redoStack.length === 0) return;
-      const currentState = this.boardStore.getBoard(this.currentBoardId);
+      const currentState = board;
       this.undoStack.push({
           elements: JSON.parse(JSON.stringify(currentState.elements || [])),
           drawings: JSON.parse(JSON.stringify(currentState.drawings || []))
@@ -464,9 +476,34 @@ class MiroClone extends HTMLElement {
       this.redoBtn.disabled = this.redoStack.length === 0;
   }
 
+  toggleLock() {
+      if (!this.currentBoardId) return;
+      const board = this.boardStore.getBoard(this.currentBoardId);
+      const newState = !board.isLocked;
+      this.boardStore.updateBoard(this.currentBoardId, { isLocked: newState });
+      this.applyLockState(newState);
+  }
+
+  applyLockState(isLocked) {
+      if (isLocked) {
+          this.lockBtn.textContent = '🔒';
+          this.lockBtn.title = 'Desbloquear Quadro';
+          this.boardViewEl.classList.add('locked');
+          this.boardTitleInput.readOnly = true;
+          this.selectionManager.clearSelection();
+      } else {
+          this.lockBtn.textContent = '🔓';
+          this.lockBtn.title = 'Bloquear Quadro';
+          this.boardViewEl.classList.remove('locked');
+          this.boardTitleInput.readOnly = false;
+      }
+  }
+
   renderCurrentBoard() {
     const board = this.boardStore.getBoard(this.currentBoardId);
     if (!board) return;
+
+    this.applyLockState(board.isLocked || false);
 
     // Clear current
     const elementsNodes = this.workspaceContentEl.querySelectorAll('.board-element');
