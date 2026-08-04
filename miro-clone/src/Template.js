@@ -399,6 +399,19 @@ template.innerHTML = `
     overflow-y: auto;
   }
 
+  .board-view.locked .toolbar {
+    pointer-events: none;
+  }
+
+  .board-view.locked .board-element {
+    pointer-events: none;
+  }
+
+  .board-view.locked .drawing-layer path,
+  .board-view.locked .drawing-layer line {
+    pointer-events: none;
+  }
+
 </style>
 <div class="app-container">
   <!-- Dashboard -->
@@ -418,6 +431,7 @@ template.innerHTML = `
       <button class="back-btn" id="back-btn">← Voltar</button>
       <input type="text" class="board-title-input" id="board-title-input" value="Novo Quadro">
       <div class="history-actions">
+        <button class="tool-btn" id="lock-btn" title="Bloquear/Desbloquear">🔓</button>
         <button class="tool-btn" id="undo-btn" title="Desfazer (Ctrl+Z)" disabled>↩️</button>
         <button class="tool-btn" id="redo-btn" title="Refazer (Ctrl+Y)" disabled>↪️</button>
       </div>
