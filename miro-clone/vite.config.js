@@ -7,7 +7,7 @@ export default defineConfig({
       entry: 'src/main.js',
       name: 'MiroClone',
       formats: ['iife'],
-      fileName: () => 'index.js'
+      fileName: () => 'build.js'
     }
   }
 });
