@@ -12,7 +12,7 @@ export class ElementFactory {
     el.style.top = (existingData ? existingData.y : coords.y) + 'px';
 
     // Size & specific classes
-    if (type === 'rect' || type === 'circle' || type === 'sticky') {
+    if (type === 'rect' || type === 'circle' || type === 'sticky' || type === 'image') {
       const resizeHandle = document.createElement('div');
       resizeHandle.classList.add('resize-handle');
       resizeHandle.addEventListener('pointerdown', (e) => {
@@ -60,6 +60,27 @@ export class ElementFactory {
         if (this.app.currentTool !== 'select') e.stopPropagation();
       });
       content.addEventListener('keydown', (e) => e.stopPropagation());
+    } else if (type === 'emoji') {
+      el.classList.add('shape-emoji');
+      el.innerHTML = existingData ? existingData.content : this.app.currentEmoji;
+      el.style.width = (existingData ? existingData.width : 60) + 'px';
+      el.style.height = (existingData ? existingData.height : 60) + 'px';
+      el.style.fontSize = (existingData && existingData.fontSize ? existingData.fontSize : 48) + 'px';
+      el.style.display = 'flex';
+      el.style.justifyContent = 'center';
+      el.style.alignItems = 'center';
+      el.dataset.content = el.innerHTML;
+    } else if (type === 'icon') {
+      el.classList.add('shape-icon');
+      const iconName = existingData ? existingData.iconName : this.app.currentIcon;
+      const color = existingData ? existingData.color : this.app.shadowRoot.getElementById('icon-color').value;
+      el.innerHTML = `<i class="${iconName}" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"></i>`;
+      el.style.color = color;
+      el.style.width = (existingData ? existingData.width : 60) + 'px';
+      el.style.height = (existingData ? existingData.height : 60) + 'px';
+      el.style.fontSize = (existingData && existingData.fontSize ? existingData.fontSize : 48) + 'px';
+      el.dataset.iconName = iconName;
+      el.dataset.color = color;
     } else if (type === 'text') {
       el.classList.add('text-note');
       const content = document.createElement('div');
@@ -73,6 +94,13 @@ export class ElementFactory {
         if (this.app.currentTool !== 'select') e.stopPropagation();
       });
       content.addEventListener('keydown', (e) => e.stopPropagation());
+    } else if (type === 'image') {
+      el.classList.add('shape-image');
+      el.style.width = (existingData && existingData.width ? existingData.width : 200) + 'px';
+      el.style.height = (existingData && existingData.height ? existingData.height : 200) + 'px';
+      const img = document.createElement('img');
+      img.src = existingData ? existingData.url : '';
+      el.appendChild(img);
     }
 
     el.dataset.type = type;
@@ -164,4 +192,5 @@ export class ElementFactory {
     }
     return el;
   }
+
 }

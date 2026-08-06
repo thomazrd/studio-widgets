@@ -11,6 +11,7 @@ export class SelectionManager {
         this.app.selectedElements.push(el);
         el.classList.add('selected');
     }
+    if (this.app.updateContextToolbar) this.app.updateContextToolbar();
   }
 
   addToSelection(el) {
@@ -20,6 +21,7 @@ export class SelectionManager {
   clearSelection() {
     this.app.selectedElements.forEach(el => el.classList.remove('selected'));
     this.app.selectedElements = [];
+    if (this.app.updateContextToolbar) this.app.updateContextToolbar();
   }
 
   updateSelectionBox(currentX, currentY) {
