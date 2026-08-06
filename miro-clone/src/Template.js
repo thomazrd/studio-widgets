@@ -216,6 +216,24 @@ template.innerHTML = `
     z-index: 10;
   }
 
+  .context-toolbar {
+    position: absolute;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+    padding: 4px;
+    gap: 4px;
+    z-index: 20;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .context-toolbar.visible {
+    display: flex;
+  }
+
   .tool-btn {
     width: 44px;
     height: 44px;
@@ -270,6 +288,77 @@ template.innerHTML = `
 
   .thickness-picker {
     width: 100%;
+  }
+
+  .palette-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .palette-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 20px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .palette-btn:hover {
+    background: #f4f5f7;
+  }
+
+  .palette-btn.selected {
+    background: #e5e9ff;
+    outline: 1px solid var(--primary-color);
+  }
+
+  .palette-btn svg,
+  .palette-btn i {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+
+  .icon-search-container {
+    padding: 8px 0;
+  }
+
+  .icon-search-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cacedb;
+    border-radius: 4px;
+    outline: none;
+    font-size: 14px;
+  }
+  
+  .icon-search-input:focus {
+    border-color: var(--primary-color);
+  }
+
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  /* Customizing emoji-picker-element */
+  emoji-picker {
+    --num-columns: 8;
+    --emoji-size: 1.5rem;
+    --background: white;
+    width: 320px;
+    height: 350px;
   }
 
   /* Workspace */
@@ -359,6 +448,19 @@ template.innerHTML = `
     border: 2px solid #050038;
     border-radius: 50%;
   }
+  
+  .shape-image {
+    background: transparent;
+  }
+  
+  .shape-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px;
+    pointer-events: none; /* so drag events fall to the parent div */
+  }
 
   .sticky-note {
     background: #fff9b1;
@@ -412,7 +514,133 @@ template.innerHTML = `
     pointer-events: none;
   }
 
+  /* Modals */
+  .modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5, 0, 56, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal-overlay.visible { display: flex; }
+  
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 600px;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  
+  .modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e0e2e8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h3 { margin: 0; color: #050038; }
+  .close-modal { cursor: pointer; font-size: 20px; font-weight: bold; color: #8c8c8c; border: none; background: transparent; }
+  .close-modal:hover { color: #f24726; }
+  
+  .modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #e0e2e8;
+  }
+  .modal-tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    background: #f4f5f7;
+    font-weight: 600;
+    color: #050038;
+    border-bottom: 2px solid transparent;
+  }
+  .modal-tab.active { background: white; border-bottom-color: var(--primary-color); color: var(--primary-color); }
+  
+  .modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .tab-pane { display: none; flex-direction: column; height: 100%; }
+  .tab-pane.active { display: flex; }
+  
+  /* Pexels Search */
+  .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-bar input { flex: 1; padding: 10px; border: 1px solid #cacedb; border-radius: 6px; outline: none; font-size: 14px; }
+  .search-bar input:focus { border-color: var(--primary-color); }
+  
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    overflow-y: auto;
+  }
+  .image-grid img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .image-grid img:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  
+  /* Upload Area */
+  .upload-area {
+    border: 2px dashed #cacedb;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .upload-area:hover, .upload-area.dragover { border-color: var(--primary-color); background-color: #f4f5f7; }
+  .upload-area input[type="file"] { display: none; }
+  .upload-icon { font-size: 40px; color: #8c8c8c; }
+  
+  /* Cropper Modal */
+  .cropper-container-wrapper { width: 100%; height: 400px; background: #e5e5e5; }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e0e2e8;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  
+  .loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .hidden { display: none !important; }
+
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <div class="app-container">
   <!-- Dashboard -->
   <div class="dashboard" id="dashboard">
@@ -444,14 +672,84 @@ template.innerHTML = `
       <button class="tool-btn" data-tool="circle" title="Círculo">⭕</button>
       <button class="tool-btn" data-tool="sticky" title="Post-it">📝</button>
       <button class="tool-btn" data-tool="text" title="Texto">T</button>
+      <button class="tool-btn" data-tool="image" title="Imagem">🖼️</button>
     </div>
     <div class="tool-options" id="pen-options">
       <label>Cor: <input type="color" class="color-picker" id="pen-color" value="#050038"></label>
       <label>Espessura: <input type="range" class="thickness-picker" id="pen-thickness" min="1" max="20" value="4"></label>
     </div>
+    <div class="tool-options" id="emoji-options" style="padding: 0;">
+      <emoji-picker id="emoji-picker"></emoji-picker>
+    </div>
+    <div class="tool-options" id="icon-options" style="width: 260px;">
+      <label style="display:flex; align-items:center; gap: 8px; font-weight: 500;">
+        Cor: <input type="color" class="color-picker" id="icon-color" value="#050038">
+      </label>
+      <div class="icon-search-container">
+        <input type="search" class="icon-search-input" id="icon-search" placeholder="Buscar ícones...">
+      </div>
+      <div class="icon-grid" id="icon-grid">
+        <!-- Ícones inseridos dinamicamente -->
+      </div>
+    </div>
     <div class="board-workspace" id="board-workspace">
       <div class="workspace-content" id="workspace-content">
         <svg class="drawing-layer" id="drawing-layer"></svg>
+      </div>
+      <div class="context-toolbar" id="context-toolbar">
+         <button class="tool-btn" id="crop-btn" title="Cortar Imagem">✂️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="image-modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Adicionar Imagem</h3>
+        <button class="close-modal" id="close-image-modal">&times;</button>
+      </div>
+      <div class="modal-tabs">
+        <div class="modal-tab active" data-target="pexels-pane">Pexels</div>
+        <div class="modal-tab" data-target="upload-pane">Meu Computador</div>
+      </div>
+      <div class="modal-body">
+        <div class="tab-pane active" id="pexels-pane">
+          <div class="search-bar">
+            <input type="text" id="pexels-search-input" placeholder="Buscar imagens gratuitas..." value="nature">
+            <button class="btn btn-primary" id="pexels-search-btn">Buscar</button>
+          </div>
+          <div id="pexels-loading" class="loading-spinner hidden"></div>
+          <div class="image-grid" id="pexels-grid"></div>
+        </div>
+        <div class="tab-pane" id="upload-pane">
+           <div class="upload-area" id="upload-area">
+              <span class="upload-icon">📁</span>
+              <div>Arraste e solte ou clique para enviar uma imagem</div>
+              <small>Envio direto seguro via UploadThing</small>
+              <input type="file" id="upload-file-input" accept="image/*">
+           </div>
+           <div id="upload-loading" class="loading-spinner hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="crop-modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Cortar Imagem</h3>
+        <button class="close-modal" id="close-crop-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:0">
+        <div class="cropper-container-wrapper">
+           <img id="cropper-image-target" src="" style="max-width: 100%; display:block;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div id="crop-loading" class="loading-spinner hidden" style="margin:0 10px; width:20px; height:20px;"></div>
+        <button class="btn" id="cancel-crop-btn">Cancelar</button>
+        <button class="btn btn-primary" id="confirm-crop-btn">Aplicar Corte</button>
       </div>
     </div>
   </div>

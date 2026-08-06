@@ -13,5 +13,10 @@
   "type": "commonjs",
   "devDependencies": {
     "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "cropperjs": "^1.6.2",
+    "emoji-picker-element": "^1.29.1",
+    "uploadthing": "^7.7.4"
   }
 }

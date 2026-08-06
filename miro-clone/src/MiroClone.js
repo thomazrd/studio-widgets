@@ -1,3 +1,4 @@
+import 'emoji-picker-element';
 import { BoardStore } from './BoardStore.js';
 import { template } from './Template.js';
 import { DashboardManager } from './DashboardManager.js';
@@ -6,6 +7,7 @@ import { SelectionManager } from './SelectionManager.js';
 import { ClipboardManager } from './ClipboardManager.js';
 import { DrawingManager } from './DrawingManager.js';
 import { ElementFactory } from './ElementFactory.js';
+import { ImageManager } from './ImageManager.js';
 
 class MiroClone extends HTMLElement {
   constructor() {
@@ -28,9 +30,15 @@ class MiroClone extends HTMLElement {
     this.penOptionsEl = this.shadowRoot.getElementById('pen-options');
     this.penColorInput = this.shadowRoot.getElementById('pen-color');
     this.penThicknessInput = this.shadowRoot.getElementById('pen-thickness');
+    
+    this.emojiOptionsEl = this.shadowRoot.getElementById('emoji-options');
+    this.iconOptionsEl = this.shadowRoot.getElementById('icon-options');
+    
     this.lockBtn = this.shadowRoot.getElementById('lock-btn');
     this.undoBtn = this.shadowRoot.getElementById('undo-btn');
     this.redoBtn = this.shadowRoot.getElementById('redo-btn');
+    this.contextToolbar = this.shadowRoot.getElementById('context-toolbar');
+    this.cropBtn = this.shadowRoot.getElementById('crop-btn');
 
     // Unique ID for widget instance isolation
     this.instanceId = this.generateInstanceId();
@@ -38,8 +46,41 @@ class MiroClone extends HTMLElement {
 
     // State
     this.currentBoardId = null;
-    this.currentTool = 'select'; // select, pen, line, rect, circle, sticky, text
+    this.currentTool = 'select'; // select, pen, line, rect, circle, sticky, text, emoji, icon, image
     this.workspaceEl.dataset.tool = 'select';
+    
+    this.currentEmoji = '😀';
+    this.currentIcon = 'fa-solid fa-star';
+    
+    this.fontAwesomeIcons = [
+      "fa-solid fa-star", "fa-regular fa-star", "fa-solid fa-heart", "fa-regular fa-heart", 
+      "fa-solid fa-user", "fa-solid fa-users", "fa-solid fa-home", "fa-solid fa-envelope",
+      "fa-solid fa-phone", "fa-solid fa-magnifying-glass", "fa-solid fa-bell",
+      "fa-solid fa-check", "fa-solid fa-xmark", "fa-solid fa-plus", "fa-solid fa-minus",
+      "fa-solid fa-circle-exclamation", "fa-solid fa-circle-info", "fa-solid fa-circle-check",
+      "fa-solid fa-thumbs-up", "fa-solid fa-thumbs-down", "fa-solid fa-camera",
+      "fa-solid fa-video", "fa-solid fa-image", "fa-solid fa-music", "fa-solid fa-comment",
+      "fa-solid fa-comments", "fa-solid fa-paper-plane", "fa-solid fa-file", "fa-solid fa-folder",
+      "fa-solid fa-trash", "fa-solid fa-pen", "fa-solid fa-link", "fa-solid fa-globe",
+      "fa-solid fa-cloud", "fa-solid fa-bolt", "fa-solid fa-fire", "fa-solid fa-snowflake",
+      "fa-solid fa-sun", "fa-solid fa-moon", "fa-solid fa-car", "fa-solid fa-plane",
+      "fa-solid fa-bicycle", "fa-solid fa-cart-shopping", "fa-solid fa-bag-shopping",
+      "fa-solid fa-gift", "fa-solid fa-credit-card", "fa-solid fa-wallet", "fa-solid fa-money-bill",
+      "fa-solid fa-chart-line", "fa-solid fa-chart-pie", "fa-solid fa-chart-bar",
+      "fa-solid fa-clock", "fa-solid fa-calendar", "fa-solid fa-compass", "fa-solid fa-map",
+      "fa-solid fa-location-dot", "fa-solid fa-bookmark", "fa-solid fa-tag", "fa-solid fa-key",
+      "fa-solid fa-lock", "fa-solid fa-unlock", "fa-solid fa-gear", "fa-solid fa-wrench",
+      "fa-solid fa-screwdriver-wrench", "fa-solid fa-shield", "fa-solid fa-shield-halved",
+      "fa-solid fa-award", "fa-solid fa-medal", "fa-solid fa-trophy", "fa-solid fa-crown",
+      "fa-solid fa-lightbulb", "fa-solid fa-power-off", "fa-solid fa-battery-full",
+      "fa-solid fa-laptop", "fa-solid fa-desktop", "fa-solid fa-mobile-screen",
+      "fa-solid fa-tablet-screen", "fa-solid fa-tv", "fa-solid fa-gamepad", "fa-solid fa-headset",
+      "fa-solid fa-microphone", "fa-solid fa-print", "fa-solid fa-clipboard", "fa-solid fa-briefcase",
+      "fa-solid fa-graduation-cap", "fa-solid fa-book", "fa-solid fa-newspaper",
+      "fa-solid fa-flask", "fa-solid fa-bug", "fa-solid fa-code", "fa-solid fa-terminal",
+      "fa-solid fa-robot", "fa-solid fa-rocket", "fa-solid fa-satellite", "fa-solid fa-meteor",
+      "fa-solid fa-ghost", "fa-solid fa-skull", "fa-solid fa-alien", "fa-solid fa-poop"
+    ];
 
     // Pan & Zoom State
     this.scale = 1;
@@ -83,6 +124,7 @@ class MiroClone extends HTMLElement {
     this.clipboardManager = new ClipboardManager(this);
     this.drawingManager = new DrawingManager(this);
     this.elementFactory = new ElementFactory(this);
+    this.imageManager = new ImageManager(this);
   }
 
   generateInstanceId() {
@@ -132,6 +174,19 @@ class MiroClone extends HTMLElement {
         this.boardStore.updateBoard(this.currentBoardId, { title: e.target.value });
       }
     });
+    
+    this.shadowRoot.getElementById('icon-color').addEventListener('input', (e) => {
+      const newColor = e.target.value;
+      let changed = false;
+      this.selectedElements.forEach(el => {
+        if (el.dataset.type === 'icon') {
+          el.style.color = newColor;
+          el.dataset.color = newColor;
+          changed = true;
+        }
+      });
+      if (changed) this.saveBoardState();
+    });
 
     this.toolBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -145,16 +200,69 @@ class MiroClone extends HTMLElement {
 
         if (this.currentTool === 'pen' || this.currentTool === 'line') {
           this.penOptionsEl.classList.add('visible');
+          this.emojiOptionsEl.classList.remove('visible');
+          this.iconOptionsEl.classList.remove('visible');
+        } else if (this.currentTool === 'emoji') {
+          this.penOptionsEl.classList.remove('visible');
+          this.emojiOptionsEl.classList.add('visible');
+          this.iconOptionsEl.classList.remove('visible');
+        } else if (this.currentTool === 'icon') {
+          this.penOptionsEl.classList.remove('visible');
+          this.emojiOptionsEl.classList.remove('visible');
+          this.iconOptionsEl.classList.add('visible');
         } else {
           this.penOptionsEl.classList.remove('visible');
+          this.emojiOptionsEl.classList.remove('visible');
+          this.iconOptionsEl.classList.remove('visible');
+        }
+
+        if (this.currentTool === 'image') {
+          this.imageManager.showImageModal();
         }
       });
     });
+
+    this.cropBtn.addEventListener('click', () => {
+       if (this.selectedElements.length === 1 && this.selectedElements[0].dataset.type === 'image') {
+           this.imageManager.showCropModal(this.selectedElements[0]);
+       }
+    });
+
+    const emojiPicker = this.shadowRoot.getElementById('emoji-picker');
+    if (emojiPicker) {
+      emojiPicker.addEventListener('emoji-click', event => {
+        this.currentEmoji = event.detail.unicode;
+      });
+    }
+    
+    this.renderIconGrid(this.fontAwesomeIcons);
+    
+    const iconSearch = this.shadowRoot.getElementById('icon-search');
+    if (iconSearch) {
+      iconSearch.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = this.fontAwesomeIcons.filter(icon => icon.includes(term));
+        this.renderIconGrid(filtered);
+      });
+    }
 
     document.addEventListener('keydown', this.handleGlobalKeyDown);
     document.addEventListener('keyup', this.handleGlobalKeyUp);
     this.workspaceManager.bindEvents();
     this.bindWorkspacePointerEvents();
+  }
+  
+  updateContextToolbar() {
+    if (this.selectedElements.length === 1 && this.selectedElements[0].dataset.type === 'image') {
+      this.contextToolbar.classList.add('visible');
+      const el = this.selectedElements[0];
+      const rect = el.getBoundingClientRect();
+      const parentRect = this.workspaceContentEl.getBoundingClientRect();
+      this.contextToolbar.style.top = (rect.top - parentRect.top - 50) + 'px';
+      this.contextToolbar.style.left = (rect.left - parentRect.left + rect.width / 2) + 'px';
+    } else {
+      this.contextToolbar.classList.remove('visible');
+    }
   }
 
   unbindEvents() {
@@ -162,6 +270,29 @@ class MiroClone extends HTMLElement {
     document.removeEventListener('keyup', this.handleGlobalKeyUp);
     if (this.handlePointerMove) window.removeEventListener('pointermove', this.handlePointerMove);
     if (this.handlePointerUp) window.removeEventListener('pointerup', this.handlePointerUp);
+  }
+
+  renderIconGrid(icons) {
+    const grid = this.shadowRoot.getElementById('icon-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    icons.forEach(iconClass => {
+      const btn = document.createElement('button');
+      btn.className = 'palette-btn';
+      if (this.currentIcon === iconClass) btn.classList.add('selected');
+      
+      const i = document.createElement('i');
+      i.className = iconClass;
+      btn.appendChild(i);
+      
+      btn.addEventListener('click', () => {
+        this.shadowRoot.querySelectorAll('#icon-grid .palette-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        this.currentIcon = iconClass;
+      });
+      grid.appendChild(btn);
+    });
   }
 
   bindWorkspacePointerEvents() {
@@ -242,7 +373,7 @@ class MiroClone extends HTMLElement {
         } else if (this.currentTool === 'pen' || this.currentTool === 'line') {
           this.isDrawing = true;
           this.drawingManager.startDrawing(coords);
-        } else if (['rect', 'circle', 'sticky', 'text'].includes(this.currentTool) && isDirectClick) {
+        } else if (['rect', 'circle', 'sticky', 'text', 'emoji', 'icon'].includes(this.currentTool) && isDirectClick) {
           this.elementFactory.createElement(this.currentTool, coords);
           this.toolBtns[0].click();
         }
@@ -288,6 +419,8 @@ class MiroClone extends HTMLElement {
                 el.style.top = (currentTop + dy) + 'px';
             }
         });
+        
+        this.updateContextToolbar();
 
         this.elementDragStartX = coords.x;
         this.elementDragStartY = coords.y;
@@ -296,8 +429,8 @@ class MiroClone extends HTMLElement {
         const dx = coords.x - this.elementDragStartX;
         const dy = coords.y - this.elementDragStartY;
 
-        let newWidth = Math.max(50, this.elementStartWidth + dx);
-        let newHeight = Math.max(50, this.elementStartHeight + dy);
+        let newWidth = Math.max(30, this.elementStartWidth + dx);
+        let newHeight = Math.max(30, this.elementStartHeight + dy);
 
         const el = this.selectedElements[0];
         if (el.dataset.type === 'circle') {
@@ -308,6 +441,11 @@ class MiroClone extends HTMLElement {
 
         el.style.width = newWidth + 'px';
         el.style.height = newHeight + 'px';
+        this.updateContextToolbar();
+        
+        if (el.dataset.type === 'emoji' || el.dataset.type === 'icon') {
+            el.style.fontSize = (newWidth * 0.8) + 'px';
+        }
       }
     };
     window.addEventListener('pointermove', this.handlePointerMove);
@@ -387,7 +525,7 @@ class MiroClone extends HTMLElement {
         y: parseFloat(node.style.top || 0),
       };
 
-      if (type === 'rect' || type === 'circle' || type === 'sticky') {
+      if (type === 'rect' || type === 'circle' || type === 'sticky' || type === 'image' || type === 'emoji' || type === 'icon') {
         data.width = parseFloat(node.style.width || node.offsetWidth);
         data.height = parseFloat(node.style.height || node.offsetHeight);
       }
@@ -395,6 +533,23 @@ class MiroClone extends HTMLElement {
       if (type === 'sticky' || type === 'text') {
         data.content = node.querySelector('.editable-content').innerHTML;
       }
+      
+      if (type === 'emoji') {
+        data.content = node.dataset.content;
+        data.fontSize = parseFloat(node.style.fontSize || 48);
+      }
+      
+      if (type === 'icon') {
+        data.iconName = node.dataset.iconName;
+        data.color = node.dataset.color;
+        data.fontSize = parseFloat(node.style.fontSize || 48);
+      }
+      
+      if (type === 'image') {
+        const img = node.querySelector('img');
+        if (img) data.url = img.src;
+      }
+      
       elementsData.push(data);
     });
 
